@@ -1,0 +1,16 @@
+# Copyright (c) 2026 Codium Electronique
+# Copyright (c) 2026 Deveritec GmbH
+# SPDX-License-Identifier: Apache-2.0
+
+sample:
+  name: Opener DECT NR+ sniffer
+  description: Continuous DECT NR+ reception streamed as DECT-NR-TAP records over UART for a Wireshark extcap
+
+tests:
+  sample.dectnrp.sniffer:
+    build_only: true
+    platform_allow: nrf9151dk/nrf9151/ns
+    integration_platforms:
+      - nrf9151dk/nrf9151/ns
+    tags:
+      - dectnrp

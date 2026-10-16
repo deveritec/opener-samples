@@ -1,0 +1,42 @@
+/*
+ * Remove MCUboot on nRF9151: TF-M secure image now starts at 0x0.
+ * The secondary slot (slot1) is dropped since there is no bootloader/DFU.
+ * SRAM (&sram0) is intentionally NOT modified — its split is defined by
+ * the TrustZone secure/non-secure boundary and the modem shared memory,
+ * neither of which depend on MCUboot.
+ */
+
+/delete-node/ &boot_partition;
+/delete-node/ &slot0_partition;   /* also deletes slot0_s / slot0_ns children */
+/delete-node/ &slot1_partition;   /* also deletes slot1_s / slot1_ns children */
+
+&flash0 {
+	partitions {
+		/* Primary (and only) image area, now based at 0x0 */
+		slot0_partition: partition@0 {
+			compatible = "zephyr,mapped-partition";
+			label = "image-0";
+			reg = <0x00000000 0x70000>;      /* 448 KB */
+			ranges = <0x0 0x0 0x70000>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			slot0_s_partition: partition@0 {
+				compatible = "zephyr,mapped-partition";
+				label = "image-0-secure";
+				reg = <0x00000000 0x40000>;   /* 256 KB TF-M secure */
+			};
+
+			slot0_ns_partition: partition@40000 {
+				compatible = "zephyr,mapped-partition";
+				label = "image-0-nonsecure";
+				reg = <0x00040000 0x30000>;   /* 192 KB non-secure app */
+			};
+		};
+
+		/*
+		 * tfm_ps / tfm_its / tfm_otp / storage remain untouched
+		 * at 0xf0000..0x100000 (defined in the base partition.dtsi).
+		 */
+	};
+};

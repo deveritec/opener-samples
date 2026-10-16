@@ -1,0 +1,19 @@
+/* NCS 3.4 DECT modem IPC shared-memory requirements. (see NRF_MODEM_SHMEM_CTRL_SIZE at deps/nrfxlib/nrf_modem/Kconfig) */
+
+&sram0_ns_modem {
+	/delete-node/ sram0_ns_modem@0;
+	/delete-node/ sram0_ns_modem@4e8;
+	/delete-node/ sram0_ns_modem@2568;
+
+	cpuapp_cpucell_ipc_shm_ctrl: sram0_ns_modem@0 {
+		reg = <0x0 0x728>;
+	};
+
+	cpuapp_cpucell_ipc_shm_heap: sram0_ns_modem@728 {
+		reg = <0x728 0x3c00>;
+	};
+
+	cpucell_cpuapp_ipc_shm_heap: sram0_ns_modem@4328 {
+		reg = <0x4328 0x1800>;
+	};
+};

@@ -1,0 +1,46 @@
+# Copyright (c) 2026 Codium Electronique
+# Copyright (c) 2026 Deveritec GmbH
+# SPDX-License-Identifier: Apache-2.0
+
+menu "DECT NR+ sniffer"
+
+config DECTNRP_SNIFFER_DEFAULT_CHANNEL
+	int "Default channel (carrier number)"
+	default 1677
+	help
+	  Channel the sniffer listens on after boot. The host can change it
+	  with SET_CONFIG.
+
+config DECTNRP_SNIFFER_DEFAULT_NETWORK_ID
+	hex "Default network ID"
+	default 0x32545279
+	help
+	  Network ID given to the dectnrp driver after boot. Same default as
+	  CONFIG_DECTNRP_SAMPLE_NETWORK_ID of the dectnrp-driver sample.
+
+config DECTNRP_SNIFFER_WINDOW_MS
+	int "RX window per driver operation (ms)"
+	default 1000
+	range 10 5000
+	help
+	  Length of one receive operation. Commands from the host are applied
+	  between two windows, so this is also the worst-case reaction time.
+	  Packets are not captured in the short gap between two windows.
+
+config DECTNRP_SNIFFER_MAX_BODY
+	int "Maximum PCC + PDC bytes per record"
+	default 256
+	help
+	  Larger packets are counted as dropped.
+
+config DECTNRP_SNIFFER_TX_QUEUE_DEPTH
+	int "Depth of the UART transmit queue (records)"
+	default 8
+
+config DECTNRP_SNIFFER_TX_THREAD_PRIO
+	int "Priority of the UART transmit thread"
+	default 7
+
+endmenu
+
+source "Kconfig.zephyr"

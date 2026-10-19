@@ -17,12 +17,17 @@ LOG_MODULE_REGISTER(dectnrp_driver_sample, CONFIG_SAMPLE_DRIVER_DECTNRP_LOG_LEVE
 #include <zephyr/net/dectnrp_net_l2.h>
 #include <zephyr/net/net_if.h>
 #include <zephyr/random/random.h>
+#include <zephyr/drivers/gpio.h>
 
 #define MS_PER_FRAME 10
 #define TIME_2_MODEMTICKS(TIME_MS)                                                                 \
 	(DECTNRP_MODEMTICKS_PER_SYMBOL * DECTNRP_SYMBOLS_PER_FRAME * TIME_MS / MS_PER_FRAME)
 
 extern struct k_fifo dectnrp_event_fifo;
+
+static const struct gpio_dt_spec led0 = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
+static const struct gpio_dt_spec led1 = GPIO_DT_SPEC_GET(DT_ALIAS(led1), gpios);
+static const struct gpio_dt_spec led2 = GPIO_DT_SPEC_GET(DT_ALIAS(led2), gpios);
 
 static uint32_t network_id = CONFIG_DECTNRP_SAMPLE_NETWORK_ID;
 
@@ -338,6 +343,11 @@ int main()
 
 	LOG_DBG("Opener dectnrp driver sample started");
 
+	/* LEDs config */
+	gpio_pin_configure_dt(&led0, GPIO_OUTPUT_INACTIVE);
+	gpio_pin_configure_dt(&led1, GPIO_OUTPUT_INACTIVE);
+	gpio_pin_configure_dt(&led2, GPIO_OUTPUT_INACTIVE);
+
 	/* Get the DECT network interface */
 	struct net_if *iface = net_if_get_first_by_type(&NET_L2_GET_NAME(DECTNRP));
 	if (!iface) {
@@ -382,6 +392,8 @@ int main()
 		LOG_INF(" - short device id 0x%x", local_device.short_device_id);
 		LOG_INF(" - channel %u", CONFIG_DECTNRP_SAMPLE_CHANNEL);
 		LOG_INF("-------------------------");
+
+		gpio_pin_set_dt(&led0, 1);
 
 		/* In unsynchronized mode we start with the full period. */
 		uint32_t period = CONFIG_DECTNRP_SAMPLE_PERIOD;
@@ -430,6 +442,7 @@ int main()
 				   Now we know our remote peer and its timing to which we can
 				   synchronize. */
 				local_device.state = DEVICE_STATE_SYNCHRONIZED;
+				gpio_pin_set_dt(&led1, 1);
 
 				LOG_INF("-------------------------");
 				LOG_INF("Local device:");
@@ -452,6 +465,7 @@ int main()
 				   Remote peer not known anymore.*/
 				remote_device.short_device_id = DECTNRP_SHORT_BROADCAST_ADDRESS;
 				local_device.state = DEVICE_STATE_UNSYNCHRONIZED;
+				gpio_pin_set_dt(&led1, 0);
 
 				LOG_INF("DEVICE_STATE_UNSYNCHRONIZED");
 

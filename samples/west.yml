@@ -94,6 +94,11 @@ manifest:
       url: https://github.com/codium-electronique/codz-sdk.git
       revision: main
       path: deps/codz-sdk
+    
+    - name: deveritec-boards
+      url: https://github.com/deveritec/dvtc-boards
+      revision: main
+      path: deps/deveritec-boards
 
   self:
     path: app

@@ -136,9 +136,9 @@
 				"name": "Device(launch)",
 				"type": "cortex-debug",
 				"device": "NRF9151_xxca",
-				"executable": "${config:build-folder}/nrf9151dk/nrf9151/ns/dectnrp-driver/zephyr/sample-dectnrp-driver.elf",
+				"executable": "${config:build-folder}/dectnrpi_nds/nrf9151/ns/dectnrp-driver/zephyr/sample-dectnrp-driver.elf",
 				"loadFiles": [
-					"${config:build-folder}/nrf9151dk/nrf9151/ns/dectnrp-driver/zephyr/tfm_merged.hex"
+					"${config:build-folder}/dectnrpi_nds/nrf9151/ns/dectnrp-driver/zephyr/tfm_merged.hex"
 				],
 				"cwd": "${workspaceFolder}",
 				"rtos": "Zephyr",
@@ -169,9 +169,9 @@
 				"name": "Device1(launch)",
 				"type": "cortex-debug",
 				"device": "NRF9151_xxca",
-				"executable": "${config:build-folder}/nrf9151dk/nrf9151/ns/dectnrp-driver/zephyr/sample-dectnrp-driver.elf",
+				"executable": "${config:build-folder}/dectnrpi_nds/nrf9151/ns/dectnrp-driver/zephyr/sample-dectnrp-driver.elf",
 				"loadFiles": [
-					"${config:build-folder}/nrf9151dk/nrf9151/ns/dectnrp-driver/zephyr/tfm_merged.hex"
+					"${config:build-folder}/dectnrpi_nds/nrf9151/ns/dectnrp-driver/zephyr/tfm_merged.hex"
 				],
 				"cwd": "${workspaceFolder}",
 				"rtos": "Zephyr",
@@ -203,9 +203,9 @@
 				"name": "Device2(launch)",
 				"type": "cortex-debug",
 				"device": "NRF9151_xxca",
-				"executable": "${config:build-folder}/nrf9151dk/nrf9151/ns/dectnrp-driver/zephyr/sample-dectnrp-driver.elf",
+				"executable": "${config:build-folder}/dectnrpi_nds/nrf9151/ns/dectnrp-driver/zephyr/sample-dectnrp-driver.elf",
 				"loadFiles": [
-					"${config:build-folder}/nrf9151dk/nrf9151/ns/dectnrp-driver/zephyr/tfm_merged.hex"
+					"${config:build-folder}/dectnrpi_nds/nrf9151/ns/dectnrp-driver/zephyr/tfm_merged.hex"
 				],
 				"cwd": "${workspaceFolder}",
 				"rtos": "Zephyr",

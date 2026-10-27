@@ -1,0 +1,14 @@
+/*
+ * Copyright (c) 2026 Deveritec GmbH
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * The sniffer stream uses the board console UART (VCOM0 on the dectnrpi_nds),
+ * with the console itself disabled in prj.conf. 921600 baud matches the
+ * default of the host extcap.
+ */
+ #include "nrf91x1_partition_without_bootloader.dtsi"
+
+&uart0 {
+	current-speed = <921600>;
+	status = "okay";
+};

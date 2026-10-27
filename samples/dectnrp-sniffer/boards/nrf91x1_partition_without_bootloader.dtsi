@@ -8,7 +8,6 @@
 
 /delete-node/ &boot_partition;
 /delete-node/ &slot0_partition;   /* also deletes slot0_s / slot0_ns children */
-/delete-node/ &slot1_partition;   /* also deletes slot1_s / slot1_ns children */
 
 &flash0 {
 	partitions {

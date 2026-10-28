@@ -1,0 +1,22 @@
+﻿default_stages: [pre-commit, pre-push]
+
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --fix
+        language: system
+        types: [python]
+
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types: [python]
+
+      - id: clang-format
+        name: clang-format
+        entry: uv run clang-format -i -style=file
+        language: system
+        types_or: [c, c++]

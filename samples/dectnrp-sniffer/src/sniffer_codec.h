@@ -47,6 +47,8 @@ enum sniff_cmd {
 #define SNIFF_TAP_TLV_LEN  8
 /* Reference dissector rejects packets shorter than 8 + 8 * 8 bytes. */
 #define SNIFF_TAP_MIN_TLVS 8
+/* data type, header status, transaction ID, channel, modem time (2), metrics (4) */
+#define SNIFF_TAP_MAX_TLVS 10
 
 enum sniff_tap_tlv_type {
 	SNIFF_TAP_PAD = 0, /* not defined by spec: fills up to the minimum TLV count */
@@ -58,6 +60,10 @@ enum sniff_tap_tlv_type {
 	SNIFF_TAP_PDC_SNR = 6,
 	SNIFF_TAP_TRANSACTION_ID = 7,
 	SNIFF_TAP_CHANNEL = 8,
+	SNIFF_TAP_TRACE_LINE = 9,
+	SNIFF_TAP_MODEM_TIME_HI = 10, /* upper 32 bits of the modem time (u32 value) */
+	SNIFF_TAP_MODEM_TIME_LO = 11, /* lower 32 bits of the modem time (u32 value) */
+	SNIFF_TAP_IS_TX = 12,
 };
 
 struct sniff_pcc_metrics {
@@ -74,11 +80,13 @@ struct sniff_rx_info {
 	uint16_t seq;     /* stored as transaction ID, wraps at 65536 */
 	bool has_metrics; /* true if pcc/pdc metrics are valid */
 	struct sniff_pcc_metrics metrics;
+	bool has_modem_time; /* true if modem_time is valid */
+	uint64_t modem_time; /* modem ticks at the start of the packet (STF) */
 };
 
 /* Maximum DECT-NR-TAP record size for a given maximum PCC+PDC size. */
 #define SNIFF_TAP_MAX_RECORD(max_body)                                                             \
-	(SNIFF_TAP_HDR_LEN + SNIFF_TAP_MIN_TLVS * SNIFF_TAP_TLV_LEN + (max_body))
+	(SNIFF_TAP_HDR_LEN + SNIFF_TAP_MAX_TLVS * SNIFF_TAP_TLV_LEN + (max_body))
 
 uint16_t sniff_crc16_update(uint16_t crc, uint8_t byte);
 uint16_t sniff_crc16(const uint8_t *data, size_t len);

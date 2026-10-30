@@ -37,7 +37,7 @@ class DebugRecordFormat(unittest.TestCase):
         for i in range(40):
             rec = self.src.record(i)
             tlvs, rest = walk(rec)
-            self.assertEqual(len(tlvs), 8)
+            self.assertEqual(len(tlvs), 10)
             modem_len = struct.unpack_from("<H", rec, 4)[0]
             self.assertEqual(modem_len, len(rest))
 
@@ -64,7 +64,19 @@ class DebugRecordFormat(unittest.TestCase):
         src = dbg.DummySource(seed=3, with_metrics=False)
         tlvs, _ = walk(src.record(0))
         self.assertEqual(len(tlvs), 8)
-        self.assertEqual(sum(1 for typ, _ in tlvs if typ == 0), 4)
+        self.assertEqual(sum(1 for typ, _ in tlvs if typ == 0), 2)
+
+    def test_modem_time_advances_by_interval(self):
+        src = dbg.DummySource(seed=3, interval_ms=100)
+        times = []
+        for i in range(5):
+            values = dict(walk(src.record(i))[0])
+            hi = values[th_const("TLV_MODEM_TIME_HI")]
+            lo = values[th_const("TLV_MODEM_TIME_LO")]
+            times.append((hi << 32) | lo)
+        self.assertEqual(times[0], dbg.MODEM_TIME_START)
+        for a, b in zip(times, times[1:]):
+            self.assertEqual(b - a, 100 * dbg.MODEM_TICKS_PER_MS)
 
     def test_channel_wraps_at_65536(self):
         src = dbg.DummySource(base_channel=65535, span=2, seed=1)
@@ -89,30 +101,19 @@ class PythonEncoderMatchesC(unittest.TestCase):
             body = bytes(rng.getrandbits(8) for _ in range(pcc_len + pdc_len))
             channel = rng.randint(0, 65535)
             seq = rng.randint(0, 65535)
+            info = {"phy_type": phy, "pdc_len": pdc_len, "channel": channel, "seq": seq}
+            metrics = None
+            modem_time = None
             if rng.random() < 0.5:
                 metrics = tuple(rng.randint(-32768, 32767) for _ in range(4))
-                py = dbg.build_tap_record(channel, seq, phy, body, pdc_len, metrics)
-                c = th.c_build_record(
-                    {
-                        "phy_type": phy,
-                        "pdc_len": pdc_len,
-                        "channel": channel,
-                        "seq": seq,
-                        "metrics": metrics,
-                    },
-                    body,
-                )
-            else:
-                py = dbg.build_tap_record(channel, seq, phy, body, pdc_len, None)
-                c = th.c_build_record(
-                    {
-                        "phy_type": phy,
-                        "pdc_len": pdc_len,
-                        "channel": channel,
-                        "seq": seq,
-                    },
-                    body,
-                )
+                info["metrics"] = metrics
+            if rng.random() < 0.5:
+                modem_time = rng.getrandbits(64)
+                info["modem_time"] = modem_time
+            py = dbg.build_tap_record(
+                channel, seq, phy, body, pdc_len, metrics, modem_time
+            )
+            c = th.c_build_record(info, body)
             self.assertEqual(py, c)
 
 

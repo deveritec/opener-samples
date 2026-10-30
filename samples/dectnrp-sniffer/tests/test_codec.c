@@ -88,6 +88,33 @@ int main(void)
 	CHECK(rd16(rec + 8 + 4) == 3);     /* 40-bit, PDC absent */
 	CHECK(rd16(rec + 8 + 8 + 4) == 2); /* header status: valid, no PDC */
 
+	/* With modem time and metrics: 10 entries, low word before high word. */
+	struct sniff_rx_info info3 = info;
+	info3.has_modem_time = true;
+	info3.modem_time = 0x0000000123456789ULL;
+	n = sniff_build_tap_record(rec, sizeof(rec), &info3, body);
+	CHECK(n == 8 + 8 * 10 + 30);
+	CHECK(n <= SNIFF_TAP_MAX_RECORD(30));
+	cnt = walk_reference(rec, n, types, 16);
+	CHECK(cnt == 10);
+	CHECK(types[4] == 11 && types[5] == 10);
+	CHECK(types[6] == 3 && types[9] == 6);
+	CHECK(rd16(rec + 8 + 32 + 2) == 4);
+	CHECK(rd16(rec + 8 + 32 + 4) == 0x6789 && rd16(rec + 8 + 32 + 6) == 0x2345);
+	CHECK(rd16(rec + 8 + 40 + 2) == 4);
+	CHECK(rd16(rec + 8 + 40 + 4) == 0x0001 && rd16(rec + 8 + 40 + 6) == 0x0000);
+	CHECK(memcmp(rec + 8 + 80, body, 30) == 0);
+
+	/* With modem time, without metrics: padded to the minimum. */
+	struct sniff_rx_info info4 = info2;
+	info4.has_modem_time = true;
+	info4.modem_time = 42;
+	n = sniff_build_tap_record(rec, sizeof(rec), &info4, body);
+	CHECK(n == 8 + 8 * 8 + 5);
+	cnt = walk_reference(rec, n, types, 16);
+	CHECK(cnt == 8);
+	CHECK(types[4] == 11 && types[5] == 10 && types[6] == 0 && types[7] == 0);
+
 	/* Buffer too small must fail cleanly. */
 	CHECK(sniff_build_tap_record(rec, 10, &info2, body) == 0);
 

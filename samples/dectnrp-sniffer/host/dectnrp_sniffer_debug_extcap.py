@@ -61,20 +61,30 @@ TLV_PDC_RSSI2 = 5
 TLV_PDC_SNR = 6
 TLV_TRANSACTION_ID = 7
 TLV_CHANNEL = 8
+TLV_MODEM_TIME_HI = 10
+TLV_MODEM_TIME_LO = 11
+
+MODEM_TICKS_PER_MS = 69120  # nRF91 modem time: 69.12 MHz
+MODEM_TIME_START = 1 << 32  # start above 32 bit, so both halves are non-zero
 
 
 def _tlv(typ, value=0, value_len=2):
-    """One 8-byte entry: type (2), length of value (2), value (2), padding (2)."""
+    """One 8-byte entry: type (2), length of value (2), value (2 or 4), padding."""
+    if value_len == 4:
+        return struct.pack("<HHI", typ, 4, value & 0xFFFFFFFF)
     return struct.pack(
         "<HHHH", typ, value_len, (value & 0xFFFF) if value_len == 2 else 0, 0
     )
 
 
-def build_tap_record(channel, seq, phy_type, pcc_pdc, pdc_len, metrics=None):
+def build_tap_record(
+    channel, seq, phy_type, pcc_pdc, pdc_len, metrics=None, modem_time=None
+):
     """DECT-NR-TAP record. Same layout as sniff_build_tap_record() in src/sniffer_codec.c.
 
     phy_type 0 = PCC Type 1 (5 bytes), 1 = PCC Type 2 (10 bytes).
     metrics is None or (pcc_rssi2, pcc_snr, pdc_rssi2, pdc_snr) as raw signed values.
+    modem_time is None or the 64-bit modem time in ticks.
     """
     pcc_len = 5 if phy_type == 0 else 10
     body = pcc_len + pdc_len
@@ -91,6 +101,12 @@ def build_tap_record(channel, seq, phy_type, pcc_pdc, pdc_len, metrics=None):
         (TLV_TRANSACTION_ID, seq & 0xFFFF),
         (TLV_CHANNEL, channel),
     ]
+    if modem_time is not None:
+        # Low word first: the dissector combines the halves only in this order.
+        entries += [
+            (TLV_MODEM_TIME_LO, modem_time & 0xFFFFFFFF, 4),
+            (TLV_MODEM_TIME_HI, (modem_time >> 32) & 0xFFFFFFFF, 4),
+        ]
     if metrics is not None:
         pcc_rssi2, pcc_snr, pdc_rssi2, pdc_snr = metrics
         entries += [
@@ -390,11 +406,13 @@ class DummySource:
         seed=DEFAULT_SEED,
         with_metrics=True,
         payload=FRAME_RANDOM,
+        interval_ms=DEFAULT_INTERVAL_MS,
     ):
         self.base_channel = base_channel
         self.span = span
         self.with_metrics = with_metrics
         self.payload = payload
+        self.interval_ms = interval_ms
         self._rng = random.Random(seed)
 
     def _random_payload(self, i):
@@ -425,8 +443,9 @@ class DummySource:
             else:
                 pdc = (round((pcc_dbm - 2.0) * 2), round((pcc_snr - 1.5) * 4))
             metrics = (pcc[0], pcc[1], pdc[0], pdc[1])
+        modem_time = MODEM_TIME_START + i * self.interval_ms * MODEM_TICKS_PER_MS
         return build_tap_record(
-            channel, i & 0xFFFF, phy_type, pcc_pdc, pdc_len, metrics
+            channel, i & 0xFFFF, phy_type, pcc_pdc, pdc_len, metrics, modem_time
         )
 
 
@@ -586,7 +605,12 @@ def main(argv=None):
                 pass
 
     source = DummySource(
-        channel, span, seed, with_metrics=(args.metrics == "on"), payload=args.frames
+        channel,
+        span,
+        seed,
+        with_metrics=(args.metrics == "on"),
+        payload=args.frames,
+        interval_ms=interval_ms,
     )
     what = (
         "valid MAC frames (beacon, association request/response)"

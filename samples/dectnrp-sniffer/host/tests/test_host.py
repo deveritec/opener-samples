@@ -84,6 +84,8 @@ class RxInfo(ctypes.Structure):
         ("seq", ctypes.c_uint16),
         ("has_metrics", ctypes.c_bool),
         ("metrics", Metrics),
+        ("has_modem_time", ctypes.c_bool),
+        ("modem_time", ctypes.c_uint64),
     ]
 
 
@@ -132,6 +134,9 @@ def c_build_record(info_kwargs, body):
     if "metrics" in info_kwargs:
         info.has_metrics = True
         info.metrics = Metrics(*info_kwargs["metrics"])
+    if "modem_time" in info_kwargs:
+        info.has_modem_time = True
+        info.modem_time = info_kwargs["modem_time"]
     buf = (ctypes.c_uint8 * 1024)()
     body_buf = (ctypes.c_uint8 * max(1, len(body)))(*body)
     n = LIB.sniff_build_tap_record(buf, 1024, ctypes.byref(info), body_buf)
@@ -159,6 +164,8 @@ def reference_walk(rec):
         if vlen == 2:
             fmt = "<h" if typ in (3, 4, 5, 6) else "<H"
             value = struct.unpack_from(fmt, rec, off + 4)[0]
+        elif vlen == 4:
+            value = struct.unpack_from("<I", rec, off + 4)[0]
         tlvs.append((typ, value))
         off += 8
     return tlvs, rec[8 + tlvs_len :]
@@ -312,6 +319,26 @@ class CodecCrossCheck(unittest.TestCase):
         self.assertEqual(values[7], 0x1234)  # transaction id
         self.assertEqual(values[8], 1677)  # channel
         self.assertEqual(values[3], -87)  # PCC RSSI2
+        self.assertEqual(rest, body)
+
+    def test_modem_time_low_word_before_high_word(self):
+        body = bytes(range(0x30, 0x30 + 10 + 20))
+        modem_time = 0x0000_0012_3456_789A
+        rec = c_build_record(
+            {
+                "phy_type": 1,
+                "pdc_len": 20,
+                "channel": 1677,
+                "seq": 1,
+                "metrics": (-87, 40, -84, -8),
+                "modem_time": modem_time,
+            },
+            body,
+        )
+        tlvs, rest = reference_walk(rec)
+        self.assertEqual([t for t, _ in tlvs], [1, 2, 7, 8, 11, 10, 3, 4, 5, 6])
+        values = dict(tlvs)
+        self.assertEqual((values[10] << 32) | values[11], modem_time)
         self.assertEqual(rest, body)
 
     def test_short_record_is_padded_to_reference_minimum(self):

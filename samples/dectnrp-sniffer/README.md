@@ -21,7 +21,7 @@ commands (PING, SET_CONFIG,     <--UART--  - STOP and clean exit on SIGTERM/SIGI
 Each received packet is sent as one DECT-NR-TAP record (`LINKTYPE_DECT_NR_TAP`,
 DLT 304, see [DSRCorporation/dect-nr-tap](https://github.com/DSRCorporation/dect-nr-tap)):
 an 8-byte header, metadata entries (data type, header status, transaction ID,
-channel and, once implemented, PCC/PDC RSSI and SNR), then the PCC bytes
+channel, modem time and PCC/PDC RSSI and SNR if available), then the PCC bytes
 followed by the PDC bytes.
 
 A second extcap, the **debug generator**, produces the same record format
@@ -221,16 +221,20 @@ Header (8 bytes, little endian):
 - bytes 4-5: modem length in bytes (PCC + PDC)
 - bytes 6-7: reserved (0)
 
-Then 8-byte entries: type (2), length of value (2), value (2), padding (2).
+Then 8-byte entries: type (2), length of value (2), value (2 or 4), padding.
 The sample writes them in this order:
 
 1. type 1, data type
 2. type 2, header status
 3. type 7, transaction ID (per-packet counter)
 4. type 8, channel
-5. types 3 to 6, PCC RSSI2, PCC SNR, PDC RSSI2, PDC SNR (only when metrics are
-   available;
-6. type 0 padding entries, so that the record has at least 8 entries
+5. type 11, modem time low 32 bits, then type 10, modem time high 32 bits
+   (u32 values, STF start time of the packet in modem ticks). The low word
+   must come first: only in this order does the dissector combine both halves
+   into the 64-bit field `dect_nr_tap.tlv_element.modem_time`.
+6. types 3 to 6, PCC RSSI2, PCC SNR, PDC RSSI2, PDC SNR (only when metrics are
+   available)
+7. type 0 padding entries, so that the record has at least 8 entries
 
 Data type values used:
 

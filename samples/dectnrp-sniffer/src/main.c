@@ -270,6 +270,9 @@ static void handle_received(const struct dectnrp_event_wrapper *item)
 		.channel = channel,
 		.seq = seq++,
 		.has_metrics = false,
+		/* STF start time of the packet in modem ticks, set by the dectnrp driver. */
+		.has_modem_time = true,
+		.modem_time = (uint64_t)event->msg_received.start_time,
 	};
 
 	info.has_metrics = get_pcc_metrics(event, &info.metrics);

@@ -183,7 +183,7 @@ class MacFrameLayout(unittest.TestCase):
         for i in range(30):
             rec = self.src.record(i)
             tlvs, rest = th.reference_walk(rec)
-            self.assertEqual(len(tlvs), dbg.TAP_MIN_TLVS)
+            self.assertEqual(len(tlvs), 10)  # incl. modem time and metrics
             modem_len = struct.unpack_from("<H", rec, 4)[0]
             self.assertEqual(modem_len, len(rest))
 

@@ -250,8 +250,10 @@ TAP_TLV_TRANSACTION_ID = 7
 
 def tap_transaction_id(record):
     """Transaction ID (TLV 7) of one DECT-NR-TAP record, or None."""
-    for k in range(8):
-        off = 8 + 8 * k  # 8-byte header, then 8-byte TLVs (type, len, value)
+    if len(record) < 8:
+        return None
+    tlvs_len = struct.unpack_from("<H", record, 2)[0]
+    for off in range(8, 8 + tlvs_len, 8):  # 8-byte header, then 8-byte TLVs
         if off + 8 > len(record):
             break
         typ, _ln, val = struct.unpack_from("<HHH", record, off)

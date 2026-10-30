@@ -61,6 +61,15 @@ static void put_tlv(uint8_t *p, uint16_t type, uint16_t value, uint8_t value_len
 	}
 }
 
+/* One TLV with a 32-bit value: type (2) | length 4 (2) | value (4). */
+static void put_tlv32(uint8_t *p, uint16_t type, uint32_t value)
+{
+	put_le16(p, type);
+	put_le16(p + 2, 4);
+	put_le16(p + 4, (uint16_t)(value & 0xFFFF));
+	put_le16(p + 6, (uint16_t)(value >> 16));
+}
+
 size_t sniff_build_tap_record(uint8_t *out, size_t out_size, const struct sniff_rx_info *info,
 			      const uint8_t *pcc_pdc)
 {
@@ -81,8 +90,15 @@ size_t sniff_build_tap_record(uint8_t *out, size_t out_size, const struct sniff_
 	}
 
 	/* Mandatory: data type, header status, transaction ID, channel.
-	 * Optional: four PCC/PDC metrics. Pad to the reference minimum. */
-	tlvs = info->has_metrics ? 8 : 4;
+	 * Optional: modem time (low + high), four PCC/PDC metrics.
+	 * Pad to the reference minimum. */
+	tlvs = 4;
+	if (info->has_modem_time) {
+		tlvs += 2;
+	}
+	if (info->has_metrics) {
+		tlvs += 4;
+	}
 	if (tlvs < SNIFF_TAP_MIN_TLVS) {
 		tlvs = SNIFF_TAP_MIN_TLVS;
 	}
@@ -109,6 +125,15 @@ size_t sniff_build_tap_record(uint8_t *out, size_t out_size, const struct sniff_
 	p += SNIFF_TAP_TLV_LEN;
 	put_tlv(p, SNIFF_TAP_CHANNEL, info->channel, 2);
 	p += SNIFF_TAP_TLV_LEN;
+
+	if (info->has_modem_time) {
+		/* Low word first: the dissector combines both halves only in
+		 * this order into the 64-bit "Modem Time" field. */
+		put_tlv32(p, SNIFF_TAP_MODEM_TIME_LO, (uint32_t)(info->modem_time & 0xFFFFFFFFu));
+		p += SNIFF_TAP_TLV_LEN;
+		put_tlv32(p, SNIFF_TAP_MODEM_TIME_HI, (uint32_t)(info->modem_time >> 32));
+		p += SNIFF_TAP_TLV_LEN;
+	}
 
 	if (info->has_metrics) {
 		put_tlv(p, SNIFF_TAP_PCC_RSSI2, (uint16_t)info->metrics.pcc_rssi2, 2);
